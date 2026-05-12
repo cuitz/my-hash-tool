@@ -62,6 +62,29 @@ button:disabled {
   margin-bottom: 14px;
 }
 
+.main-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.algorithm-note {
+  margin-right: auto;
+  color: var(--muted);
+  font-family: "SF Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.main-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .topbar h1,
 .topbar p,
 .empty-state h2,
@@ -249,6 +272,13 @@ button:disabled {
   min-width: 0;
 }
 
+.task-card__tools {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  gap: 8px;
+}
+
 .file-title {
   min-width: 0;
 }
@@ -274,11 +304,10 @@ button:disabled {
 }
 
 .file-size {
-  flex: 0 0 auto;
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
-  padding-top: 2px;
+  padding-top: 8px;
 }
 
 .progress-meta {
@@ -499,11 +528,29 @@ button:disabled {
   }
 
   .task-card__header,
+  .task-card__tools,
   .progress-meta,
   .switch-row,
   .threshold-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .main-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .main-action-buttons {
+    justify-content: flex-start;
+  }
+
+  .algorithm-note {
+    margin-right: 0;
+  }
+
+  .file-size {
+    padding-top: 0;
   }
 
   .hash-row {

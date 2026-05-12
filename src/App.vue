@@ -353,14 +353,7 @@ async function copyHash(task: HashTask, algorithm: keyof HashResult) {
 
   const value = task.hashes[algorithm]
 
-  try {
-    if (!window.ztools?.copyText?.(value)) {
-      await navigator.clipboard.writeText(value)
-    }
-  } catch (error) {
-    notifyError(error, '复制失败')
-    return
-  }
+  if (!(await copyText(value))) return
 
   copiedKey.value = `${task.id}-${algorithm}`
   window.setTimeout(() => {
@@ -368,6 +361,59 @@ async function copyHash(task: HashTask, algorithm: keyof HashResult) {
       copiedKey.value = ''
     }
   }, 1500)
+}
+
+async function copyTaskHashes(task: HashTask) {
+  if (!task.hashes) return
+
+  if (!(await copyText(formatTaskHashes(task)))) return
+
+  copiedKey.value = `${task.id}-all`
+  window.setTimeout(() => {
+    if (copiedKey.value === `${task.id}-all`) {
+      copiedKey.value = ''
+    }
+  }, 1500)
+}
+
+async function copyAllHashes() {
+  const doneTasks = tasks.value.filter((task) => task.status === 'done' && task.hashes)
+  if (!doneTasks.length) return
+
+  if (!(await copyText(doneTasks.map((task) => formatTaskHashes(task)).join('\n\n')))) return
+
+  copiedKey.value = 'all-results'
+  window.setTimeout(() => {
+    if (copiedKey.value === 'all-results') {
+      copiedKey.value = ''
+    }
+  }, 1500)
+}
+
+async function copyText(value: string) {
+  try {
+    if (!window.ztools?.copyText?.(value)) {
+      await navigator.clipboard.writeText(value)
+    }
+  } catch (error) {
+    notifyError(error, '复制失败')
+    return false
+  }
+
+  return true
+}
+
+function formatTaskHashes(task: HashTask) {
+  if (!task.hashes) return ''
+
+  const title = task.kind === 'file' ? task.path : '字符串输入'
+
+  return [
+    title,
+    `MD5: ${task.hashes.md5}`,
+    `SHA1: ${task.hashes.sha1}`,
+    `SHA256: ${task.hashes.sha256}`
+  ].join('\n')
 }
 
 function formatBytes(bytes: number) {
@@ -441,12 +487,20 @@ onMounted(() => {
 <template>
   <main class="app-shell">
     <template v-if="route === 'main'">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">MD5 / SHA1 / SHA256</p>
-          <h1>哈希计算器</h1>
+      <header class="main-actions">
+        <span class="algorithm-note">MD5 / SHA1 / SHA256</span>
+        <div class="main-action-buttons">
+          <button
+            v-if="tasks.some((task) => task.status === 'done')"
+            class="secondary-button"
+            type="button"
+            title="复制全部已完成结果"
+            @click="copyAllHashes"
+          >
+            {{ copiedKey === 'all-results' ? '已复制全部' : '复制全部结果' }}
+          </button>
+          <button class="icon-button" type="button" title="设置" @click="openSettings">设置</button>
         </div>
-        <button class="icon-button" type="button" title="设置" @click="openSettings">设置</button>
       </header>
 
       <section
@@ -509,7 +563,18 @@ onMounted(() => {
               <h2 :title="task.kind === 'file' ? task.path : task.text">{{ task.name }}</h2>
               <p>{{ getTaskMeta(task) }}</p>
             </div>
-            <span class="file-size">{{ getTaskSize(task) }}</span>
+            <div class="task-card__tools">
+              <span class="file-size">{{ getTaskSize(task) }}</span>
+              <button
+                v-if="task.status === 'done'"
+                class="copy-button"
+                type="button"
+                title="复制该项全部 Hash"
+                @click="copyTaskHashes(task)"
+              >
+                {{ copiedKey === `${task.id}-all` ? '已复制' : '复制全部' }}
+              </button>
+            </div>
           </div>
 
           <div class="progress-meta">
