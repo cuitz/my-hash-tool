@@ -56,6 +56,9 @@ const warningFiles = ref<FileInfo[]>([])
 const warningVisible = ref(false)
 const disableFutureWarnings = ref(false)
 const settings = reactive<Settings>({ ...DEFAULT_SETTINGS })
+const completionToast = ref('')
+const completionToastTone = ref<'neutral' | 'error'>('neutral')
+let completionToastTimer = 0
 
 const thresholdInput = computed({
   get: () => String(settings.largeFileWarningThresholdGB),
@@ -85,15 +88,10 @@ const taskSummary = computed(() => {
 
 const warningSummary = computed(() => {
   const totalSize = warningFiles.value.reduce((sum, file) => sum + file.size, 0)
-  const largestFile = warningFiles.value.reduce<FileInfo | null>((largest, file) => {
-    if (!largest || file.size > largest.size) return file
-    return largest
-  }, null)
 
   return {
     count: warningFiles.value.length,
-    totalSize,
-    largestFile
+    totalSize
   }
 })
 
@@ -176,15 +174,22 @@ function hashTextInput() {
   startTextHashing(text)
 }
 
-function handleDragOver(event: DragEvent) {
+function handleDragEnter(event: DragEvent) {
+  if (route.value !== 'main' || isHashing.value) return
   event.preventDefault()
-  if (!isHashing.value) {
-    isDragging.value = true
-  }
+  isDragging.value = true
+}
+
+function handleDragOver(event: DragEvent) {
+  if (route.value !== 'main' || isHashing.value) return
+  event.preventDefault()
+  if (!isDragging.value) isDragging.value = true
 }
 
 function handleDragLeave(event: DragEvent) {
-  if (event.currentTarget === event.target) {
+  const related = event.relatedTarget as Node | null
+  const current = event.currentTarget as HTMLElement
+  if (!related || !current.contains(related)) {
     isDragging.value = false
   }
 }
@@ -193,7 +198,7 @@ function handleDrop(event: DragEvent) {
   event.preventDefault()
   isDragging.value = false
 
-  if (isHashing.value) return
+  if (route.value !== 'main' || isHashing.value) return
 
   const files = event.dataTransfer?.files
   if (!files?.length) return
@@ -208,6 +213,14 @@ function handleDrop(event: DragEvent) {
   } catch (error) {
     notifyError(error, '读取文件信息失败')
   }
+}
+
+function clearTasks() {
+  if (isHashing.value) return
+  tasks.value = []
+  textInput.value = ''
+  inputRepresentsFiles.value = false
+  copiedKey.value = ''
 }
 
 function handleFiles(files: FileInfo[]) {
@@ -283,6 +296,7 @@ async function startHashing(files: FileInfo[]) {
   }
 
   isHashing.value = false
+  notifyBatchFinished(tasks.value)
 }
 
 function startTextHashing(text: string) {
@@ -451,11 +465,33 @@ function getErrorMessage(error: unknown) {
 
 function notifyError(error: unknown, title: string) {
   const message = `${title}：${getErrorMessage(error)}`
-  try {
-    window.ztools?.showNotification?.(message)
-  } catch {
-    // Notification is best-effort in browser preview and non-ZTools environments.
+  showCompletionToast(message, 'error')
+}
+
+function notifyBatchFinished(finishedTasks: HashTask[]) {
+  if (finishedTasks.length <= 1) return
+
+  const failedCount = finishedTasks.filter((task) => task.status === 'error').length
+  const doneCount = finishedTasks.length - failedCount
+  const message = failedCount
+    ? `Hash 计算完成：${doneCount} 个成功，${failedCount} 个失败`
+    : `Hash 计算完成：${doneCount} 个文件已处理`
+
+  showCompletionToast(message, 'neutral')
+}
+
+function showCompletionToast(message: string, tone: 'neutral' | 'error' = 'neutral') {
+  completionToast.value = message
+  completionToastTone.value = tone
+
+  if (completionToastTimer) {
+    window.clearTimeout(completionToastTimer)
   }
+
+  completionToastTimer = window.setTimeout(() => {
+    completionToast.value = ''
+    completionToastTimer = 0
+  }, 2600)
 }
 
 function handlePluginEnter(action: PluginFileEnterAction) {
@@ -485,13 +521,29 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="app-shell">
+  <main
+    class="app-shell"
+    :class="{ 'is-drop-target': isDragging && route === 'main' }"
+    @dragenter="handleDragEnter"
+    @dragover="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop="handleDrop"
+  >
     <template v-if="route === 'main'">
       <header class="main-actions">
         <span class="algorithm-note">MD5 / SHA1 / SHA256</span>
         <div class="main-action-buttons">
           <button
-            v-if="tasks.some((task) => task.status === 'done')"
+            v-if="tasks.length && !isHashing"
+            class="text-button"
+            type="button"
+            title="清空当前任务"
+            @click="clearTasks"
+          >
+            清空
+          </button>
+          <button
+            v-if="!isHashing && tasks.some((task) => task.status === 'done')"
             class="secondary-button"
             type="button"
             title="复制全部已完成结果"
@@ -505,18 +557,16 @@ onMounted(() => {
 
       <section
         class="input-zone"
-        :class="{ 'is-dragging': isDragging, 'is-busy': isHashing }"
-        @dragover="handleDragOver"
-        @dragleave="handleDragLeave"
-        @drop="handleDrop"
+        :class="{ 'is-dragging': isDragging, 'is-busy': isHashing, 'is-file-mode': inputRepresentsFiles }"
       >
         <label class="input-label" for="hash-input">
-          {{ isDragging ? '松开开始计算文件 Hash' : '输入字符串或拖入文件' }}
+          {{ isDragging ? '松开开始计算文件 Hash' : inputRepresentsFiles ? `已选择 ${tasks.length || textInput.split('\n').filter(Boolean).length} 个文件` : '输入字符串或拖入文件' }}
         </label>
         <textarea
           id="hash-input"
           v-model="textInput"
           :disabled="isHashing"
+          :readonly="inputRepresentsFiles"
           spellcheck="false"
           placeholder="在这里输入或粘贴字符串；也可以把文件拖到这个输入框区域。"
           @input="handleTextInput"
@@ -524,15 +574,16 @@ onMounted(() => {
           @keydown.ctrl.enter.prevent="hashTextInput"
         ></textarea>
         <div class="input-actions">
+          <span class="shortcut-hint">⌘/Ctrl + Enter 开始计算</span>
           <button
-            class="primary-button"
+            class="secondary-button"
             type="button"
             :disabled="isHashing || inputRepresentsFiles"
             @click="hashTextInput"
           >
             计算字符串
           </button>
-          <button class="secondary-button" type="button" :disabled="isHashing" @click="selectFiles">
+          <button class="primary-button" type="button" :disabled="isHashing" @click="selectFiles">
             选择文件
           </button>
         </div>
@@ -560,8 +611,10 @@ onMounted(() => {
         >
           <div class="task-card__header">
             <div class="file-title">
-              <h2 :title="task.kind === 'file' ? task.path : task.text">{{ task.name }}</h2>
-              <p>{{ getTaskMeta(task) }}</p>
+              <h2 :title="task.kind === 'file' ? task.path : task.text">
+                <span class="file-title__name">{{ task.name }}</span>
+              </h2>
+              <p :title="task.kind === 'file' ? task.path : task.text">{{ getTaskMeta(task) }}</p>
             </div>
             <div class="task-card__tools">
               <span class="file-size">{{ getTaskSize(task) }}</span>
@@ -581,7 +634,14 @@ onMounted(() => {
             <span>{{ getStatusText(task) }}</span>
             <span>{{ task.progress }}%</span>
           </div>
-          <div class="progress-track" aria-hidden="true">
+          <div
+            class="progress-track"
+            role="progressbar"
+            :aria-valuenow="task.progress"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            :aria-label="`${task.name} 计算进度`"
+          >
             <div class="progress-fill" :style="{ width: `${task.progress}%` }"></div>
           </div>
 
@@ -589,23 +649,31 @@ onMounted(() => {
             <div v-for="algorithm in HASH_ALGORITHMS" :key="algorithm" class="hash-row">
               <dt>{{ algorithm.toUpperCase() }}</dt>
               <dd>
-                <span class="hash-value" :title="getHashValue(task, algorithm)">
-                  {{ getHashValue(task, algorithm) }}
-                </span>
                 <button
-                  v-if="task.status === 'done'"
-                  class="copy-button"
                   type="button"
-                  :title="`复制 ${algorithm.toUpperCase()}`"
-                  @click="copyHash(task, algorithm)"
+                  class="hash-value"
+                  :class="{ 'is-interactive': task.status === 'done' }"
+                  :disabled="task.status !== 'done'"
+                  :title="task.status === 'done' ? '点击复制' : getHashValue(task, algorithm)"
+                  @click="task.status === 'done' && copyHash(task, algorithm)"
                 >
-                  {{ copiedKey === `${task.id}-${algorithm}` ? '已复制' : '复制' }}
+                  {{ getHashValue(task, algorithm) }}
                 </button>
+                <span
+                  v-if="task.status === 'done' && copiedKey === `${task.id}-${algorithm}`"
+                  class="copied-flag"
+                  role="status"
+                  aria-live="polite"
+                >已复制</span>
               </dd>
             </div>
           </dl>
         </article>
       </section>
+
+      <div v-if="isDragging && route === 'main'" class="drop-overlay" aria-hidden="true">
+        <div class="drop-overlay__panel">松开以开始计算文件 Hash</div>
+      </div>
 
       <div v-if="warningVisible" class="modal-layer" role="presentation">
         <section class="warning-dialog" role="dialog" aria-modal="true" aria-labelledby="large-file-title">
@@ -614,9 +682,6 @@ onMounted(() => {
           <p>
             本次选择 {{ warningSummary.count }} 个文件，共
             {{ formatBytes(warningSummary.totalSize) }}。插件会使用流式读取，不会一次性加载整个文件。
-          </p>
-          <p v-if="warningSummary.largestFile" class="warning-detail">
-            最大文件：{{ warningSummary.largestFile.name }}，{{ formatBytes(warningSummary.largestFile.size) }}
           </p>
 
           <label class="checkbox-row">
@@ -630,15 +695,23 @@ onMounted(() => {
           </div>
         </section>
       </div>
+
+      <Transition name="completion-toast">
+        <p
+          v-if="completionToast"
+          class="completion-toast"
+          :class="`is-${completionToastTone}`"
+          role="status"
+          aria-live="polite"
+        >
+          {{ completionToast }}
+        </p>
+      </Transition>
     </template>
 
     <template v-else>
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">偏好设置</p>
-          <h1>设置</h1>
-        </div>
-        <button class="icon-button" type="button" @click="closeSettings">返回</button>
+      <header class="settings-header">
+        <button class="icon-button" type="button" @click="closeSettings">← 返回</button>
       </header>
 
       <section class="settings-panel">
