@@ -27,6 +27,11 @@ type TextHashTask = BaseHashTask & {
 
 type HashTask = FileHashTask | TextHashTask
 
+type PluginFileEnterAction = {
+  type: string
+  payload?: Array<{ path?: string }>
+}
+
 type Settings = {
   largeFileWarningEnabled: boolean
   largeFileWarningThresholdGB: number
@@ -124,7 +129,7 @@ function normalizeSettings(value?: Partial<Settings> | null): Settings {
         ? value.largeFileWarningEnabled
         : DEFAULT_SETTINGS.largeFileWarningEnabled,
     largeFileWarningThresholdGB:
-      Number.isFinite(threshold) && threshold >= 0.1 && threshold <= 1024
+      Number.isFinite(threshold) && threshold >= 1 && threshold <= 1024
         ? Number(threshold.toFixed(2))
         : DEFAULT_SETTINGS.largeFileWarningThresholdGB
   }
@@ -349,9 +354,12 @@ async function copyHash(task: HashTask, algorithm: keyof HashResult) {
   const value = task.hashes[algorithm]
 
   try {
-    await navigator.clipboard.writeText(value)
-  } catch {
-    copyTextFallback(value)
+    if (!window.ztools?.copyText?.(value)) {
+      await navigator.clipboard.writeText(value)
+    }
+  } catch (error) {
+    notifyError(error, '复制失败')
+    return
   }
 
   copiedKey.value = `${task.id}-${algorithm}`
@@ -360,18 +368,6 @@ async function copyHash(task: HashTask, algorithm: keyof HashResult) {
       copiedKey.value = ''
     }
   }, 1500)
-}
-
-function copyTextFallback(value: string) {
-  const textarea = document.createElement('textarea')
-  textarea.value = value
-  textarea.setAttribute('readonly', 'true')
-  textarea.style.position = 'fixed'
-  textarea.style.opacity = '0'
-  document.body.appendChild(textarea)
-  textarea.select()
-  document.execCommand('copy')
-  document.body.removeChild(textarea)
 }
 
 function formatBytes(bytes: number) {
@@ -412,11 +408,11 @@ function notifyError(error: unknown, title: string) {
   try {
     window.ztools?.showNotification?.(message)
   } catch {
-    console.error(message)
+    // Notification is best-effort in browser preview and non-ZTools environments.
   }
 }
 
-function handlePluginEnter(action: any) {
+function handlePluginEnter(action: PluginFileEnterAction) {
   route.value = 'main'
 
   if (action.type !== 'files' || !Array.isArray(action.payload)) return
@@ -602,7 +598,7 @@ onMounted(() => {
             <input
               v-model="thresholdInput"
               type="number"
-              min="0.1"
+              min="1"
               max="1024"
               step="1"
               @blur="updateThreshold"

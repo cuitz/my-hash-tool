@@ -5,6 +5,10 @@ node_modules/
 dist/
 *.zip
 
+# Unpacked plugin bundles
+/my-hash-tool/
+/my-hash-tool-v*/
+
 # Logs
 logs/
 *.log
