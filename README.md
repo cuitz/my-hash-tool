@@ -33,11 +33,10 @@ npm run build
 ## 打包
 
 ```bash
-cd dist
-zip -r ../my-hash-tool-v1.0.0.zip .
+npm run package
 ```
 
-安装包根目录需要直接包含 `plugin.json`。
+打包脚本会先执行构建，再生成 `my-hash-tool-v1.0.0.zip`。安装包根目录会直接包含 `plugin.json`。
 
 ## 设计文档
 
