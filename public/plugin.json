@@ -2,7 +2,7 @@
   "$schema": "node_modules/@ztools-center/ztools-api-types/resource/ztools.schema.json",
   "name": "my-hash-tool",
   "title": "哈希计算器",
-  "description": "计算文件或字符 MD5、SHA1、SHA256",
+  "description": "计算文件或字符 Hash：默认 MD5、SHA1、SHA256，可选 CRC32、SHA384、SHA512",
   "author": "Evan Cui",
   "version": "1.2.1",
   "main": "index.html",
@@ -17,7 +17,7 @@
   "features": [
     {
       "code": "file-hash",
-      "explain": "计算文件或字符 MD5 / SHA1 / SHA256",
+      "explain": "计算文件或字符 Hash：默认 MD5 / SHA1 / SHA256，可选 CRC32 / SHA384 / SHA512",
       "icon": "logo.png",
       "cmds": [
         "hash",
@@ -25,6 +25,9 @@
         "md5",
         "sha1",
         "sha256",
+        "crc32",
+        "sha384",
+        "sha512",
         "文件哈希",
         "文件校验",
         "字符哈希",

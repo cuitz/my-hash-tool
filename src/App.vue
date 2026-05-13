@@ -717,6 +717,8 @@ onMounted(() => {
                   :disabled="task.status !== 'done'"
                   :title="task.status === 'done' ? '点击复制' : getHashValue(task, algorithm)"
                   @click="task.status === 'done' && copyHash(task, algorithm)"
+                  @dragstart.prevent
+                  @selectstart.prevent
                 >
                   {{ getHashValue(task, algorithm) }}
                 </button>
