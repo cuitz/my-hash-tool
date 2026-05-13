@@ -101,15 +101,17 @@ function hashFile(filePath, algorithms, onProgress) {
       }
     }
 
+    const hashInstances = Object.values(hashes)
+    const shouldCalculateCrc32 = enabledAlgorithms.includes('crc32')
     const stream = fs.createReadStream(filePath, { highWaterMark: CHUNK_SIZE })
     let bytesRead = 0
 
     stream.on('data', (chunk) => {
       bytesRead += chunk.length
-      for (const hash of Object.values(hashes)) {
+      for (const hash of hashInstances) {
         hash.update(chunk)
       }
-      if (enabledAlgorithms.includes('crc32')) {
+      if (shouldCalculateCrc32) {
         crc32 = updateCrc32(crc32, chunk)
       }
 

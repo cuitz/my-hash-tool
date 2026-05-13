@@ -99,8 +99,10 @@ const taskSummary = computed(() => {
 })
 
 const batchProgress = computed(() => {
-  if (!taskSummary.value.total) return 0
-  return Math.round(((taskSummary.value.done + taskSummary.value.error) / taskSummary.value.total) * 100)
+  if (!tasks.value.length) return 0
+
+  const totalProgress = tasks.value.reduce((sum, task) => sum + task.progress, 0)
+  return Math.round(totalProgress / tasks.value.length)
 })
 
 const enabledAlgorithms = computed<HashAlgorithm[]>(() => [
