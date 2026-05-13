@@ -36,7 +36,7 @@ npm run build
 npm run package
 ```
 
-打包脚本会先执行构建，再生成 `my-hash-tool-v1.0.0.zip`。安装包根目录会直接包含 `plugin.json`。
+打包脚本会先执行构建，再按当前版本生成 `my-hash-tool-v{version}.zip`。安装包根目录会直接包含 `plugin.json`。
 
 ## 设计文档
 
