@@ -498,6 +498,10 @@ function handlePluginEnter(action: PluginFileEnterAction) {
   route.value = 'main'
 
   if (action.type !== 'files' || !Array.isArray(action.payload)) return
+  if (isHashing.value) {
+    showCompletionToast('正在计算中，请稍后再添加文件', 'error')
+    return
+  }
 
   const paths = action.payload.map((item: { path?: string }) => item.path).filter(Boolean)
   if (!paths.length) return

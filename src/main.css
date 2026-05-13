@@ -423,8 +423,6 @@ input:focus-visible {
   margin-top: 3px;
   text-overflow: ellipsis;
   white-space: nowrap;
-  direction: rtl;
-  text-align: left;
 }
 
 .file-size {
