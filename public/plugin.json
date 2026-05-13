@@ -21,6 +21,7 @@
       "icon": "logo.png",
       "cmds": [
         "hash",
+        "checksum",
         "md5",
         "sha1",
         "sha256",

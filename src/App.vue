@@ -578,7 +578,7 @@ onMounted(() => {
           @keydown.ctrl.enter.prevent="hashTextInput"
         ></textarea>
         <div class="input-actions">
-          <span class="shortcut-hint">⌘/Ctrl + Enter 开始计算</span>
+          <span class="shortcut-hint">⌘/Ctrl + Enter 计算字符串</span>
           <button
             class="secondary-button"
             type="button"
