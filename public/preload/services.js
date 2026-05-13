@@ -3,6 +3,9 @@ const fs = require('node:fs')
 const path = require('node:path')
 
 const CHUNK_SIZE = 4 * 1024 * 1024
+const CORE_ALGORITHMS = ['md5', 'sha1', 'sha256']
+const CRYPTO_ALGORITHMS = new Set(['md5', 'sha1', 'sha256', 'sha384', 'sha512'])
+const CRC32_TABLE = createCrc32Table()
 let electronWebUtils = null
 
 try {
@@ -38,7 +41,46 @@ function getDroppedFilePath(file) {
   throw new Error('无法读取拖入文件的路径，请使用“选择文件”按钮重试')
 }
 
-function hashFile(filePath, onProgress) {
+function normalizeAlgorithms(algorithms) {
+  const requestedAlgorithms = Array.isArray(algorithms) ? algorithms : []
+  const nextAlgorithms = []
+
+  for (const algorithm of [...CORE_ALGORITHMS, ...requestedAlgorithms]) {
+    if ((CRYPTO_ALGORITHMS.has(algorithm) || algorithm === 'crc32') && !nextAlgorithms.includes(algorithm)) {
+      nextAlgorithms.push(algorithm)
+    }
+  }
+
+  return nextAlgorithms
+}
+
+function createCrc32Table() {
+  const table = new Uint32Array(256)
+
+  for (let index = 0; index < table.length; index += 1) {
+    let value = index
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1
+    }
+    table[index] = value >>> 0
+  }
+
+  return table
+}
+
+function updateCrc32(currentValue, chunk) {
+  let value = currentValue
+  for (const byte of chunk) {
+    value = CRC32_TABLE[(value ^ byte) & 0xff] ^ (value >>> 8)
+  }
+  return value >>> 0
+}
+
+function digestCrc32(currentValue) {
+  return ((currentValue ^ 0xffffffff) >>> 0).toString(16).padStart(8, '0')
+}
+
+function hashFile(filePath, algorithms, onProgress) {
   return new Promise((resolve, reject) => {
     let fileSize = 0
 
@@ -49,19 +91,27 @@ function hashFile(filePath, onProgress) {
       return
     }
 
-    const hashes = {
-      md5: crypto.createHash('md5'),
-      sha1: crypto.createHash('sha1'),
-      sha256: crypto.createHash('sha256')
+    const enabledAlgorithms = normalizeAlgorithms(algorithms)
+    const hashes = {}
+    let crc32 = 0xffffffff
+
+    for (const algorithm of enabledAlgorithms) {
+      if (CRYPTO_ALGORITHMS.has(algorithm)) {
+        hashes[algorithm] = crypto.createHash(algorithm)
+      }
     }
+
     const stream = fs.createReadStream(filePath, { highWaterMark: CHUNK_SIZE })
     let bytesRead = 0
 
     stream.on('data', (chunk) => {
       bytesRead += chunk.length
-      hashes.md5.update(chunk)
-      hashes.sha1.update(chunk)
-      hashes.sha256.update(chunk)
+      for (const hash of Object.values(hashes)) {
+        hash.update(chunk)
+      }
+      if (enabledAlgorithms.includes('crc32')) {
+        crc32 = updateCrc32(crc32, chunk)
+      }
 
       if (typeof onProgress === 'function') {
         onProgress({
@@ -85,23 +135,30 @@ function hashFile(filePath, onProgress) {
         })
       }
 
-      resolve({
-        md5: hashes.md5.digest('hex'),
-        sha1: hashes.sha1.digest('hex'),
-        sha256: hashes.sha256.digest('hex')
-      })
+      const result = {}
+      for (const algorithm of enabledAlgorithms) {
+        result[algorithm] = algorithm === 'crc32' ? digestCrc32(crc32) : hashes[algorithm].digest('hex')
+      }
+
+      resolve(result)
     })
   })
 }
 
-function hashText(text) {
+function hashText(text, algorithms) {
   const content = String(text)
+  const buffer = Buffer.from(content, 'utf8')
+  const enabledAlgorithms = normalizeAlgorithms(algorithms)
+  const result = {}
 
-  return {
-    md5: crypto.createHash('md5').update(content, 'utf8').digest('hex'),
-    sha1: crypto.createHash('sha1').update(content, 'utf8').digest('hex'),
-    sha256: crypto.createHash('sha256').update(content, 'utf8').digest('hex')
+  for (const algorithm of enabledAlgorithms) {
+    result[algorithm] =
+      algorithm === 'crc32'
+        ? digestCrc32(updateCrc32(0xffffffff, buffer))
+        : crypto.createHash(algorithm).update(buffer).digest('hex')
   }
+
+  return result
 }
 
 // 通过 window 对象向渲染进程注入 nodejs 能力
@@ -126,11 +183,11 @@ window.services = {
     return Array.from(files).map((file) => getFileInfo(getDroppedFilePath(file)))
   },
 
-  hashFile(filePath, onProgress) {
-    return hashFile(filePath, onProgress)
+  hashFile(filePath, algorithms, onProgress) {
+    return hashFile(filePath, algorithms, onProgress)
   },
 
-  hashText(text) {
-    return hashText(text)
+  hashText(text, algorithms) {
+    return hashText(text, algorithms)
   }
 }

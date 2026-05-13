@@ -21,11 +21,10 @@ declare global {
     progress: number
   }
 
-  type HashResult = {
-    md5: string
-    sha1: string
-    sha256: string
-  }
+  type CoreHashAlgorithm = 'md5' | 'sha1' | 'sha256'
+  type ExtraHashAlgorithm = 'crc32' | 'sha384' | 'sha512'
+  type HashAlgorithm = CoreHashAlgorithm | ExtraHashAlgorithm
+  type HashResult = Partial<Record<HashAlgorithm, string>> & Record<CoreHashAlgorithm, string>
 
   interface Services {
     selectFiles: () => FileInfo[]
@@ -33,9 +32,10 @@ declare global {
     getDroppedFileInfos: (files: FileList | File[]) => FileInfo[]
     hashFile: (
       filePath: string,
+      algorithms: HashAlgorithm[],
       onProgress?: (progress: HashProgress) => void
     ) => Promise<HashResult>
-    hashText: (text: string) => HashResult
+    hashText: (text: string, algorithms: HashAlgorithm[]) => HashResult
   }
 
   interface Window {
