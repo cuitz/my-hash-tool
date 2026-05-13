@@ -86,6 +86,11 @@ const taskSummary = computed(() => {
   return summary
 })
 
+const batchProgress = computed(() => {
+  if (!taskSummary.value.total) return 0
+  return Math.round(((taskSummary.value.done + taskSummary.value.error) / taskSummary.value.total) * 100)
+})
+
 const warningSummary = computed(() => {
   const totalSize = warningFiles.value.reduce((sum, file) => sum + file.size, 0)
 
@@ -593,12 +598,21 @@ onMounted(() => {
         </div>
       </section>
 
-      <section v-if="tasks.length > 1" class="summary-strip" aria-label="任务汇总">
-        <span>本次任务：{{ taskSummary.total }} 项</span>
-        <span>已完成 {{ taskSummary.done }}</span>
-        <span>正在计算 {{ taskSummary.hashing }}</span>
-        <span>等待 {{ taskSummary.waiting }}</span>
-        <span v-if="taskSummary.error">失败 {{ taskSummary.error }}</span>
+      <section v-if="tasks.length > 1" class="batch-panel" aria-label="任务汇总">
+        <div class="batch-panel__header">
+          <span>{{ isHashing ? '批量计算中' : '批量计算完成' }}</span>
+          <strong>{{ batchProgress }}%</strong>
+        </div>
+        <div class="batch-progress" aria-hidden="true">
+          <span class="batch-progress__done" :style="{ width: `${batchProgress}%` }"></span>
+        </div>
+        <div class="batch-stats">
+          <span>{{ taskSummary.total }} 项</span>
+          <span>{{ taskSummary.done }} 完成</span>
+          <span v-if="taskSummary.hashing">{{ taskSummary.hashing }} 计算中</span>
+          <span v-if="taskSummary.waiting">{{ taskSummary.waiting }} 等待</span>
+          <span v-if="taskSummary.error">{{ taskSummary.error }} 失败</span>
+        </div>
       </section>
 
       <section v-if="!tasks.length" class="empty-state">

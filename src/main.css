@@ -283,30 +283,67 @@ input:focus-visible {
   font-family: "SF Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
 }
 
-.summary-strip {
+.batch-panel {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  border: 1px solid rgba(223, 231, 241, 0.92);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: var(--shadow-soft);
+  padding: 11px 12px;
+}
+
+.batch-panel__header,
+.batch-stats {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.batch-panel__header {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.batch-panel__header strong {
+  color: var(--accent-strong);
+  font-family: "SF Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
+  font-size: 12px;
+}
+
+.batch-progress {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: #e8eef8;
+}
+
+.batch-progress__done {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--mint));
+  transition: width 0.28s ease;
+}
+
+.batch-stats {
   flex-wrap: wrap;
-  gap: 6px 14px;
-  margin: 12px 2px;
+  justify-content: flex-start;
   color: var(--muted);
   font-size: 12px;
 }
 
-.summary-strip span {
-  position: relative;
-}
-
-.summary-strip span + span::before {
-  content: "";
-  position: absolute;
-  left: -7px;
-  top: 50%;
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.5;
-  transform: translateY(-50%);
+.batch-stats span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  border-radius: 999px;
+  background: var(--panel-soft);
+  padding: 0 8px;
 }
 
 .empty-state {
