@@ -15,15 +15,16 @@ try {
 }
 
 function getFileInfo(filePath) {
-  const stat = fs.statSync(filePath)
+  const normalizedPath = path.resolve(filePath)
+  const stat = fs.statSync(normalizedPath)
 
   if (!stat.isFile()) {
     throw new Error('请选择文件，暂不支持文件夹')
   }
 
   return {
-    path: filePath,
-    name: path.basename(filePath),
+    path: normalizedPath,
+    name: path.basename(normalizedPath),
     size: stat.size
   }
 }
@@ -82,10 +83,12 @@ function digestCrc32(currentValue) {
 
 function hashFile(filePath, algorithms, onProgress) {
   return new Promise((resolve, reject) => {
+    // 规范化路径，防止路径遍历攻击
+    const normalizedPath = path.resolve(filePath)
     let fileSize = 0
 
     try {
-      fileSize = fs.statSync(filePath).size
+      fileSize = fs.statSync(normalizedPath).size
     } catch (error) {
       reject(error)
       return
@@ -103,7 +106,7 @@ function hashFile(filePath, algorithms, onProgress) {
 
     const hashInstances = Object.values(hashes)
     const shouldCalculateCrc32 = enabledAlgorithms.includes('crc32')
-    const stream = fs.createReadStream(filePath, { highWaterMark: CHUNK_SIZE })
+    const stream = fs.createReadStream(normalizedPath, { highWaterMark: CHUNK_SIZE })
     let bytesRead = 0
 
     stream.on('data', (chunk) => {
@@ -117,7 +120,7 @@ function hashFile(filePath, algorithms, onProgress) {
 
       if (typeof onProgress === 'function') {
         onProgress({
-          path: filePath,
+          path: normalizedPath,
           bytesRead,
           totalBytes: fileSize,
           progress: fileSize === 0 ? 100 : Math.min(100, (bytesRead / fileSize) * 100)
@@ -125,12 +128,17 @@ function hashFile(filePath, algorithms, onProgress) {
       }
     })
 
-    stream.on('error', (error) => reject(error))
+    stream.on('error', (error) => {
+      stream.destroy()
+      reject(error)
+    })
 
     stream.on('end', () => {
+      stream.destroy()
+
       if (typeof onProgress === 'function') {
         onProgress({
-          path: filePath,
+          path: normalizedPath,
           bytesRead: fileSize,
           totalBytes: fileSize,
           progress: 100

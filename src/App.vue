@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 
 type TaskStatus = 'waiting' | 'hashing' | 'done' | 'error'
 
@@ -70,13 +70,14 @@ const disableFutureWarnings = ref(false)
 const settings = reactive<Settings>({ ...DEFAULT_SETTINGS })
 const completionToast = ref('')
 const completionToastTone = ref<'neutral' | 'error'>('neutral')
-let completionToastTimer = 0
+let completionToastTimer: ReturnType<typeof setTimeout> | null = null
 
 const thresholdInput = computed({
   get: () => String(settings.largeFileWarningThresholdGB),
   set: (value: string) => {
     const nextValue = Number(value)
-    if (Number.isFinite(nextValue)) {
+    // 验证阈值范围：1-1024 GB
+    if (Number.isFinite(nextValue) && nextValue >= 1 && nextValue <= 1024) {
       settings.largeFileWarningThresholdGB = nextValue
     }
   }
@@ -178,17 +179,13 @@ function closeSettings() {
 
 function selectFiles() {
   if (isHashing.value) return
-  if (!window.services) {
-    notifyError('请在 ZTools 中选择文件，浏览器预览仅用于查看界面', '当前环境不可用')
-    return
-  }
-
-  try {
-    const files = window.services.selectFiles()
-    handleFiles(files)
-  } catch (error) {
-    notifyError(error, '选择文件失败')
-  }
+  withServices(
+    (services) => {
+      const files = services.selectFiles()
+      handleFiles(files)
+    },
+    '选择文件失败'
+  )
 }
 
 function hashTextInput() {
@@ -217,9 +214,10 @@ function handleDragOver(event: DragEvent) {
 }
 
 function handleDragLeave(event: DragEvent) {
-  const related = event.relatedTarget as Node | null
+  const related = event.relatedTarget
   const current = event.currentTarget as HTMLElement
-  if (!related || !current.contains(related)) {
+  // relatedTarget 可能是 Element 或 null，使用 instanceof 检查
+  if (!related || !(related instanceof Node) || !current.contains(related)) {
     isDragging.value = false
   }
 }
@@ -233,16 +231,12 @@ function handleDrop(event: DragEvent) {
   const files = event.dataTransfer?.files
   if (!files?.length) return
 
-  try {
-    if (!window.services) {
-      notifyError('请在 ZTools 中拖入文件，浏览器预览仅用于查看界面', '当前环境不可用')
-      return
-    }
-
-    handleFiles(window.services.getDroppedFileInfos(files))
-  } catch (error) {
-    notifyError(error, '读取文件信息失败')
-  }
+  withServices(
+    (services) => {
+      handleFiles(services.getDroppedFileInfos(files))
+    },
+    '读取文件信息失败'
+  )
 }
 
 function clearTasks() {
@@ -337,6 +331,8 @@ function startTextHashing(text: string) {
   task.status = 'hashing'
   task.progress = 35
 
+  // 使用 setTimeout 让 UI 有机会更新进度条状态，避免同步阻塞导致界面卡顿
+  // 文本哈希计算通常很快，80ms 延迟给用户视觉反馈
   window.setTimeout(() => {
     try {
       task.hashes = window.services.hashText(text, task.algorithms)
@@ -516,6 +512,19 @@ function notifyError(error: unknown, title: string) {
   showCompletionToast(message, 'error')
 }
 
+// 提取重复的 services 调用模式
+function withServices<T>(fn: (services: Services) => T, errorTitle: string): T | undefined {
+  if (!window.services) {
+    notifyError('请在 ZTools 中操作，浏览器预览仅用于查看界面', '当前环境不可用')
+    return
+  }
+  try {
+    return fn(window.services)
+  } catch (error) {
+    notifyError(error, errorTitle)
+  }
+}
+
 function notifyBatchFinished(finishedTasks: HashTask[]) {
   if (finishedTasks.length <= 1) return
 
@@ -532,13 +541,13 @@ function showCompletionToast(message: string, tone: 'neutral' | 'error' = 'neutr
   completionToast.value = message
   completionToastTone.value = tone
 
-  if (completionToastTimer) {
+  if (completionToastTimer !== null) {
     window.clearTimeout(completionToastTimer)
   }
 
   completionToastTimer = window.setTimeout(() => {
     completionToast.value = ''
-    completionToastTimer = 0
+    completionToastTimer = null
   }, 2600)
 }
 
@@ -551,15 +560,15 @@ function handlePluginEnter(action: PluginFileEnterAction) {
     return
   }
 
-  const paths = action.payload.map((item: { path?: string }) => item.path).filter(Boolean)
+  const paths = action.payload.map((item: { path?: string }) => item.path).filter((p): p is string => Boolean(p))
   if (!paths.length) return
 
-  try {
-    if (!window.services) return
-    handleFiles(window.services.getFileInfos(paths))
-  } catch (error) {
-    notifyError(error, '读取文件信息失败')
-  }
+  withServices(
+    (services) => {
+      handleFiles(services.getFileInfos(paths))
+    },
+    '读取文件信息失败'
+  )
 }
 
 onMounted(() => {
@@ -569,6 +578,18 @@ onMounted(() => {
   window.ztools?.onPluginOut?.(() => {
     isDragging.value = false
   })
+})
+
+onUnmounted(() => {
+  // 清理拖拽状态
+  isDragging.value = false
+  // 清理定时器
+  if (completionToastTimer !== null) {
+    window.clearTimeout(completionToastTimer)
+    completionToastTimer = null
+  }
+  // 注意：ZTools 的 onPluginEnter/onPluginOut 可能没有对应的注销 API
+  // 如果有，应该在这里调用，例如：window.ztools?.offPluginEnter?.(handlePluginEnter)
 })
 </script>
 

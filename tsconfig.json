@@ -3,7 +3,11 @@
     "target": "ES2020",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -11,9 +15,13 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "preserve",
-    "strict": false,
-    "noImplicitAny": false,
-    "types": ["@ztools-center/ztools-api-types"]
+    "strict": true,
+    "noImplicitAny": true,
+    "types": [
+      "@ztools-center/ztools-api-types"
+    ]
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

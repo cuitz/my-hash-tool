@@ -1,4 +1,4 @@
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync, rmSync, readdirSync, statSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import packageJson from '../package.json' with { type: 'json' }
@@ -30,6 +30,29 @@ if (!existsSync(join(distDir, 'plugin.json'))) {
 
 rmSync(packagePath, { force: true })
 
-run('zip', ['-r', packagePath, '.'], { cwd: distDir })
+// 使用跨平台的 JSZip 库代替系统 zip 命令
+const JSZip = (await import('jszip')).default
+const zip = new JSZip()
+
+// 递归添加文件到 zip
+function addFilesToZip(dirPath, zipFolder) {
+  const files = readdirSync(dirPath)
+  for (const file of files) {
+    const filePath = join(dirPath, file)
+    const stat = statSync(filePath)
+
+    if (stat.isDirectory()) {
+      addFilesToZip(filePath, zipFolder.folder(file))
+    } else {
+      const content = readFileSync(filePath)
+      zipFolder.file(file, content)
+    }
+  }
+}
+
+addFilesToZip(distDir, zip.folder())
+
+const content = await zip.generateAsync({ type: 'nodebuffer' })
+writeFileSync(packagePath, content)
 
 console.log(`\nCreated ${basename(packagePath)}`)
