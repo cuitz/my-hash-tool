@@ -870,6 +870,12 @@ input:focus-visible {
     color: #eff4ff;
   }
 
+  .input-zone textarea:focus,
+  .number-field input:focus {
+    border-color: #50678b;
+    background: #141d2d;
+  }
+
   .input-zone.is-file-mode textarea {
     background: var(--panel-soft);
   }
@@ -880,6 +886,28 @@ input:focus-visible {
 
   .progress-track {
     background: #26344c;
+  }
+
+  .batch-panel {
+    border-color: #2a3850;
+    background: #151e2e;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .batch-panel__header strong {
+    color: #d1dcf4;
+  }
+
+  .batch-progress {
+    background: #202b40;
+  }
+
+  .batch-progress__done {
+    background: linear-gradient(90deg, #6e94df, #58b9ad);
+  }
+
+  .batch-stats span {
+    background: #1b2639;
   }
 
   .task-card.is-error {
