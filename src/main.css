@@ -539,11 +539,79 @@ input:focus-visible {
 
 .hash-row dd {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
   min-width: 0;
   margin: 0;
+}
+
+.case-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-family: "SF Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.case-toggle:hover:not(.is-disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.case-toggle.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.segmented {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--panel-soft);
+}
+
+.segmented__option {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  height: 32px;
+  padding: 0 14px;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.segmented__option + .segmented__option {
+  border-left: 1px solid var(--border);
+}
+
+.segmented__option:hover:not(.is-selected) {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.segmented__option.is-selected {
+  background: var(--accent);
+  color: #fff;
 }
 
 .hash-value {
@@ -816,8 +884,8 @@ input:focus-visible {
   }
 
   .hash-row dd {
-    grid-template-columns: 1fr;
-    gap: 4px;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
   }
 
   .copied-flag {
@@ -869,6 +937,22 @@ input:focus-visible {
   .number-field input {
     background: #111827;
     color: #eff4ff;
+  }
+
+  .case-toggle {
+    background: #1b2639;
+  }
+
+  .segmented {
+    background: #1b2639;
+  }
+
+  .segmented__option:hover:not(.is-selected) {
+    background: #243248;
+  }
+
+  .segmented__option.is-selected {
+    color: #0b1220;
   }
 
   .input-zone textarea:focus,

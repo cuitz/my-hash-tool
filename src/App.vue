@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 
 type TaskStatus = 'waiting' | 'hashing' | 'done' | 'error'
+type HashCase = 'lowercase' | 'uppercase'
 
 type BaseHashTask = {
   id: string
@@ -13,6 +14,7 @@ type BaseHashTask = {
   error: string
   algorithms: HashAlgorithm[]
   hashes: HashResult | null
+  displayCases: Partial<Record<HashAlgorithm, HashCase>>
 }
 
 type FileHashTask = BaseHashTask &
@@ -37,13 +39,15 @@ type Settings = {
   largeFileWarningEnabled: boolean
   largeFileWarningThresholdGB: number
   extraAlgorithms: ExtraHashAlgorithm[]
+  defaultCase: HashCase
 }
 
 const SETTINGS_KEY = 'my-hash-tool.settings'
 const DEFAULT_SETTINGS: Settings = {
   largeFileWarningEnabled: true,
   largeFileWarningThresholdGB: 2,
-  extraAlgorithms: []
+  extraAlgorithms: [],
+  defaultCase: 'lowercase'
 }
 const BYTES_PER_GB = 1024 * 1024 * 1024
 const CORE_HASH_ALGORITHMS: CoreHashAlgorithm[] = ['md5', 'sha1', 'sha256']
@@ -160,7 +164,8 @@ function normalizeSettings(value?: Partial<Settings> | null): Settings {
       Number.isFinite(threshold) && threshold >= 1 && threshold <= 1024
         ? Number(threshold.toFixed(2))
         : DEFAULT_SETTINGS.largeFileWarningThresholdGB,
-    extraAlgorithms: Array.from(new Set(extraAlgorithms))
+    extraAlgorithms: Array.from(new Set(extraAlgorithms)),
+    defaultCase: value?.defaultCase === 'uppercase' ? 'uppercase' : DEFAULT_SETTINGS.defaultCase
   }
 }
 
@@ -348,6 +353,15 @@ function startTextHashing(text: string) {
   }, 80)
 }
 
+function buildInitialDisplayCases(algorithms: HashAlgorithm[]): Partial<Record<HashAlgorithm, HashCase>> {
+  const initialCase = settings.defaultCase
+  const result: Partial<Record<HashAlgorithm, HashCase>> = {}
+  for (const algorithm of algorithms) {
+    result[algorithm] = initialCase
+  }
+  return result
+}
+
 function createTask(file: FileInfo, algorithms: HashAlgorithm[]): FileHashTask {
   return {
     ...file,
@@ -357,7 +371,8 @@ function createTask(file: FileInfo, algorithms: HashAlgorithm[]): FileHashTask {
     progress: 0,
     error: '',
     algorithms: [...algorithms],
-    hashes: null
+    hashes: null,
+    displayCases: buildInitialDisplayCases(algorithms)
   }
 }
 
@@ -373,7 +388,8 @@ function createTextTask(text: string, algorithms: HashAlgorithm[]): TextHashTask
     progress: 0,
     error: '',
     algorithms: [...algorithms],
-    hashes: null
+    hashes: null,
+    displayCases: buildInitialDisplayCases(algorithms)
   }
 }
 
@@ -384,17 +400,56 @@ function getStatusText(task: HashTask) {
   return task.kind === 'file' ? `读取失败：${task.error}` : `计算失败：${task.error}`
 }
 
+function applyCase(value: string, displayCase: HashCase) {
+  return displayCase === 'uppercase' ? value.toUpperCase() : value
+}
+
+function getDisplayedHash(task: HashTask, algorithm: HashAlgorithm) {
+  const raw = task.hashes?.[algorithm]
+  if (!raw) return ''
+  const displayCase = task.displayCases[algorithm] ?? 'lowercase'
+  return applyCase(raw, displayCase)
+}
+
 function getHashValue(task: HashTask, algorithm: HashAlgorithm) {
-  if (task.status === 'done' && task.hashes) return task.hashes[algorithm] || '未计算'
+  if (task.status === 'done' && task.hashes) return getDisplayedHash(task, algorithm) || '未计算'
   if (task.status === 'error') return '未计算'
   if (task.status === 'waiting') return '等待计算'
   return '正在计算...'
 }
 
+function getRowCase(task: HashTask, algorithm: HashAlgorithm): HashCase {
+  return task.displayCases[algorithm] ?? 'lowercase'
+}
+
+function isRowCaseToggleEnabled(task: HashTask) {
+  return task.status === 'done'
+}
+
+function getRowCaseToggleLabel(task: HashTask, algorithm: HashAlgorithm) {
+  const algorithmLabel = HASH_ALGORITHM_LABELS[algorithm]
+  const targetLabel = getRowCase(task, algorithm) === 'uppercase' ? '小写' : '大写'
+  return `切换 ${algorithmLabel} 为${targetLabel}`
+}
+
+function toggleRowCase(task: HashTask, algorithm: HashAlgorithm) {
+  if (!isRowCaseToggleEnabled(task)) return
+  task.displayCases[algorithm] = getRowCase(task, algorithm) === 'uppercase' ? 'lowercase' : 'uppercase'
+}
+
+function applyAllCase(target: HashCase) {
+  for (const task of tasks.value) {
+    if (task.status !== 'done') continue
+    for (const algorithm of task.algorithms) {
+      task.displayCases[algorithm] = target
+    }
+  }
+}
+
 async function copyHash(task: HashTask, algorithm: HashAlgorithm) {
   if (!task.hashes) return
 
-  const value = task.hashes[algorithm]
+  const value = getDisplayedHash(task, algorithm)
   if (!value) return
 
   if (!(await copyText(value))) return
@@ -454,7 +509,7 @@ function formatTaskHashes(task: HashTask) {
 
   return [
     title,
-    ...task.algorithms.map((algorithm) => `${HASH_ALGORITHM_LABELS[algorithm]}: ${task.hashes?.[algorithm] || '未计算'}`)
+    ...task.algorithms.map((algorithm) => `${HASH_ALGORITHM_LABELS[algorithm]}: ${getDisplayedHash(task, algorithm) || '未计算'}`)
   ].join('\n')
 }
 
@@ -472,6 +527,12 @@ function toggleExtraAlgorithm(algorithm: ExtraHashAlgorithm, enabled: boolean) {
 
 function isExtraAlgorithmEnabled(algorithm: ExtraHashAlgorithm) {
   return settings.extraAlgorithms.includes(algorithm)
+}
+
+function setDefaultCase(value: HashCase) {
+  if (settings.defaultCase === value) return
+  settings.defaultCase = value
+  saveSettings()
 }
 
 function formatBytes(bytes: number) {
@@ -616,6 +677,24 @@ onUnmounted(() => {
             清空
           </button>
           <button
+            v-if="tasks.some((task) => task.status === 'done')"
+            class="text-button"
+            type="button"
+            title="将所有结果统一为小写"
+            @click="applyAllCase('lowercase')"
+          >
+            全部小写
+          </button>
+          <button
+            v-if="tasks.some((task) => task.status === 'done')"
+            class="text-button"
+            type="button"
+            title="将所有结果统一为大写"
+            @click="applyAllCase('uppercase')"
+          >
+            全部大写
+          </button>
+          <button
             v-if="!isHashing && tasks.some((task) => task.status === 'done')"
             class="secondary-button"
             type="button"
@@ -743,6 +822,17 @@ onUnmounted(() => {
                 >
                   {{ getHashValue(task, algorithm) }}
                 </button>
+                <button
+                  type="button"
+                  class="case-toggle"
+                  :class="{ 'is-disabled': !isRowCaseToggleEnabled(task) }"
+                  :aria-disabled="isRowCaseToggleEnabled(task) ? 'false' : 'true'"
+                  :aria-label="getRowCaseToggleLabel(task, algorithm)"
+                  :title="isRowCaseToggleEnabled(task) ? getRowCaseToggleLabel(task, algorithm) : '计算完成后可切换大小写'"
+                  @click="toggleRowCase(task, algorithm)"
+                  @keydown.enter.prevent="toggleRowCase(task, algorithm)"
+                  @keydown.space.prevent="toggleRowCase(task, algorithm)"
+                >{{ getRowCase(task, algorithm) === 'uppercase' ? 'Aa' : 'aa' }}</button>
                 <span
                   v-if="task.status === 'done' && copiedKey === `${task.id}-${algorithm}`"
                   class="copied-flag"
@@ -829,6 +919,33 @@ onUnmounted(() => {
             <strong>GB</strong>
           </span>
         </label>
+
+        <div class="settings-copy settings-copy--section">
+          <h2>默认大小写</h2>
+          <p>新计算结果首次显示时使用的大小写形式；不影响已显示的结果。</p>
+        </div>
+
+        <div class="switch-row" role="radiogroup" aria-label="默认大小写">
+          <span>计算结果默认显示</span>
+          <span class="segmented">
+            <button
+              type="button"
+              class="segmented__option"
+              :class="{ 'is-selected': settings.defaultCase === 'lowercase' }"
+              role="radio"
+              :aria-checked="settings.defaultCase === 'lowercase' ? 'true' : 'false'"
+              @click="setDefaultCase('lowercase')"
+            >小写</button>
+            <button
+              type="button"
+              class="segmented__option"
+              :class="{ 'is-selected': settings.defaultCase === 'uppercase' }"
+              role="radio"
+              :aria-checked="settings.defaultCase === 'uppercase' ? 'true' : 'false'"
+              @click="setDefaultCase('uppercase')"
+            >大写</button>
+          </span>
+        </div>
 
         <div class="settings-copy settings-copy--section">
           <h2>额外算法</h2>
