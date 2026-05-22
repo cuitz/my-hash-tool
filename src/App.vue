@@ -814,12 +814,13 @@ onUnmounted(() => {
         </div>
       </section>
 
-      <section v-if="!tasks.length" class="empty-state">
+      <Transition name="fade-in" mode="out-in">
+      <section v-if="!tasks.length" key="empty" class="empty-state">
         <h2>计算结果会显示在这里</h2>
         <p>字符串会直接计算；文件会分块读取，已启用的算法会在同一遍文件流中完成。</p>
       </section>
 
-      <section v-else class="task-list" aria-label="Hash 计算结果">
+      <section v-else key="tasks" class="task-list" aria-label="Hash 计算结果">
         <article
           v-for="task in tasks"
           :key="task.id"
@@ -871,7 +872,7 @@ onUnmounted(() => {
                   class="hash-value"
                   :class="{ 'is-interactive': task.status === 'done' }"
                   :disabled="task.status !== 'done'"
-                  :title="getHashValue(task, algorithm)"
+                  :title="task.status === 'done' ? getDisplayedHash(task, algorithm) : getHashValue(task, algorithm)"
                   @click="task.status === 'done' && copyHash(task, algorithm)"
                 >
                   {{ getHashValue(task, algorithm) }}
@@ -887,7 +888,7 @@ onUnmounted(() => {
                   @click="toggleRowCase(task, algorithm)"
                   @keydown.enter.prevent="toggleRowCase(task, algorithm)"
                   @keydown.space.prevent="toggleRowCase(task, algorithm)"
-                >{{ getRowCase(task, algorithm) === 'uppercase' ? 'Aa' : 'aa' }}</button>
+                >{{ getRowCase(task, algorithm) === 'uppercase' ? 'aa' : 'AA' }}</button>
                 <span
                   v-if="task.status === 'done' && copiedKey === `${task.id}-${algorithm}`"
                   class="copied-flag"
@@ -899,6 +900,7 @@ onUnmounted(() => {
           </dl>
         </article>
       </section>
+      </Transition>
 
       <div v-if="isDragging && route === 'main'" class="drop-overlay" aria-hidden="true">
         <div class="drop-overlay__panel">松开以开始计算文件 Hash</div>

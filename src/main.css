@@ -504,7 +504,7 @@ input:focus-visible {
   height: 100%;
   border-radius: inherit;
   background: var(--accent);
-  transition: width 0.2s ease;
+  transition: width 0.2s ease, background 0.3s ease;
 }
 
 .task-card.is-done .progress-fill {
@@ -759,6 +759,19 @@ input:focus-visible {
   transform: translate(-50%, 6px);
 }
 
+.fade-in-enter-active {
+  transition: opacity 0.18s ease;
+}
+
+.fade-in-leave-active {
+  transition: opacity 0.12s ease;
+}
+
+.fade-in-enter-from,
+.fade-in-leave-to {
+  opacity: 0;
+}
+
 .checkbox-row,
 .switch-row,
 .threshold-row {
@@ -935,7 +948,7 @@ input:focus-visible {
   .input-zone textarea,
   .hash-value,
   .number-field input {
-    background: #111827;
+    background: var(--bg);
     color: #eff4ff;
   }
 
