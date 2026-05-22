@@ -74,7 +74,7 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
   overflow: hidden;
   color: var(--muted);
   font-family: "SF Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
   padding: 0 2px;
@@ -103,6 +103,7 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
   border-radius: 6px;
   background: var(--panel-solid);
   color: var(--text);
+  font-size: 13px;
   font-weight: 600;
   padding: 0 12px;
   transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
@@ -122,12 +123,6 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
   padding: 0 8px;
 }
 .text-button:hover:not(:disabled) { color: var(--text); background: var(--panel-soft); }
-
-.text-button--xs {
-  min-height: 24px;
-  font-size: 11px;
-  padding: 0 6px;
-}
 
 /* 卡片内大小写批量切换按钮：有边框，更易发现 */
 .text-button--case {
@@ -215,13 +210,6 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
 }
 
 /* ── 文件标签列表（文件模式） ── */
-.file-chips-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
 .file-chips {
   display: flex;
   flex-wrap: wrap;
@@ -608,15 +596,6 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
 }
 
 /* ── 大文件提醒弹窗 ── */
-.eyebrow {
-  color: var(--accent-strong);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  margin: 0 0 4px;
-  text-transform: uppercase;
-}
-
 .modal-layer {
   position: fixed;
   inset: 0;
@@ -636,7 +615,7 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.2);
   padding: 20px;
 }
-.warning-dialog h2 { color: var(--text); font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+.warning-dialog h2 { color: var(--text); font-size: 15px; font-weight: 600; margin: 0 0 8px; }
 .warning-dialog p { color: var(--muted); line-height: 1.55; font-size: 13px; margin: 0; }
 
 .checkbox-row {

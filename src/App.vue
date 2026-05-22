@@ -498,10 +498,17 @@ function handlePluginOut() {
   isDragging.value = false
 }
 
+function handleKeyDown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && settingsOpen.value) {
+    closeSettings()
+  }
+}
+
 onMounted(() => {
   loadSettings()
   window.ztools?.onPluginEnter?.(handlePluginEnter)
   window.ztools?.onPluginOut?.(handlePluginOut)
+  window.addEventListener('keydown', handleKeyDown)
 })
 
 onUnmounted(() => {
@@ -509,6 +516,7 @@ onUnmounted(() => {
   cancelRequested.value = true
   isDragging.value = false
   if (completionToastTimer !== null) { window.clearTimeout(completionToastTimer); completionToastTimer = null }
+  window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 
@@ -545,16 +553,7 @@ onUnmounted(() => {
     >
       <!-- 文件模式：紧凑标签列表 -->
       <template v-if="inputRepresentsFiles">
-        <div class="file-chips-header">
-          <span class="input-label">已选择 {{ textInput.split('\n').filter(Boolean).length }} 个文件</span>
-          <button
-            v-if="!isHashing"
-            class="text-button"
-            type="button"
-            title="清空当前任务"
-            @click="clearTasks"
-          >清空</button>
-        </div>
+        <span class="input-label">已选择 {{ textInput.split('\n').filter(Boolean).length }} 个文件</span>
         <ul class="file-chips" aria-label="已选择的文件">
           <li
             v-for="line in textInput.split('\n').filter(Boolean)"
@@ -567,6 +566,13 @@ onUnmounted(() => {
           </li>
         </ul>
         <div class="input-actions">
+          <button
+            v-if="!isHashing"
+            class="secondary-button"
+            type="button"
+            title="清空当前任务"
+            @click="clearTasks"
+          >清空</button>
           <button class="primary-button" type="button" :disabled="isHashing" @click="selectFiles">
             重新选择
           </button>
@@ -739,7 +745,6 @@ onUnmounted(() => {
     <!-- ── 大文件提醒弹窗 ── -->
     <div v-if="warningVisible" class="modal-layer" role="presentation">
       <section class="warning-dialog" role="dialog" aria-modal="true" aria-labelledby="large-file-title">
-        <p class="eyebrow">大文件提醒</p>
         <h2 id="large-file-title">计算可能需要较长时间</h2>
         <p>
           本次选择 {{ warningSummary.count }} 个文件，共
