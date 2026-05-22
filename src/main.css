@@ -1,30 +1,30 @@
 :root {
-  color: #172033;
-  background: #f4f7fb;
+  color: #1a1f2e;
+  background: #f5f5f4;
   font-family:
     "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui,
     sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --bg: #f4f7fb;
+  --bg: #f5f5f4;
   --panel: #ffffff;
   --panel-solid: #ffffff;
-  --panel-soft: #f7f9fc;
-  --text: #172033;
-  --muted: #667085;
-  --subtle: #8a95a6;
+  --panel-soft: #f7f7f6;
+  --text: #1a1f2e;
+  --muted: #64748b;
+  --subtle: #94a3b8;
   --border: #e2e8f0;
-  --strong-border: #c8d5e5;
-  --accent: #2c6bed;
-  --accent-strong: #1f55c7;
-  --accent-soft: #edf4ff;
-  --mint: #12a594;
-  --mint-soft: #e7f8f5;
-  --danger: #c3564b;
-  --danger-soft: #fff1ef;
-  --warning: #c8891c;
-  --shadow: 0 6px 20px rgba(23, 32, 51, 0.06);
-  --shadow-soft: 0 2px 8px rgba(23, 32, 51, 0.04);
+  --strong-border: #cbd5e1;
+  --accent: #3451b2;
+  --accent-strong: #2a3f8f;
+  --accent-soft: #eff2ff;
+  --mint: #0f9b8e;
+  --mint-soft: #e6f7f5;
+  --danger: #c0392b;
+  --danger-soft: #fef2f2;
+  --warning: #b45309;
+  --shadow: 0 6px 20px rgba(26, 31, 46, 0.07);
+  --shadow-soft: 0 2px 8px rgba(26, 31, 46, 0.04);
 }
 
 * { box-sizing: border-box; }
@@ -37,7 +37,7 @@ button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: 0.58; }
 button:focus-visible, textarea:focus-visible, input:focus-visible {
-  outline: 2px solid rgba(44, 107, 237, 0.4);
+  outline: 2px solid rgba(52, 81, 178, 0.4);
   outline-offset: 2px;
 }
 
@@ -183,7 +183,7 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
   resize: vertical;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #fbfcfe;
+  background: #fffffe;
   color: var(--text);
   font-family: "SF Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
   font-size: 13px;
@@ -351,7 +351,7 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
 /* ── 任务列表 & 卡片 ── */
 .task-list {
   display: grid;
-  gap: 10px;
+  gap: 6px;
   width: 100%;
   min-width: 0;
   margin-top: 12px;
@@ -365,7 +365,7 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel);
-  padding: 14px;
+  padding: 10px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .task-card:hover { box-shadow: var(--shadow-soft); }
@@ -513,8 +513,8 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #f8fafd;
-  color: #1a2436;
+  background: var(--panel-soft);
+  color: var(--text);
   font-family: "SF Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
   font-size: 12px;
   line-height: 1.45;
@@ -799,27 +799,27 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
 /* ── 暗黑模式 ── */
 @media (prefers-color-scheme: dark) {
   :root {
-    color: #eff4ff;
-    background: #111827;
-    --bg: #111827;
-    --panel: #172033;
-    --panel-solid: #172033;
-    --panel-soft: #1d2840;
-    --text: #eff4ff;
-    --muted: #a7b2c3;
-    --subtle: #8693a8;
-    --border: #2d3a52;
-    --strong-border: #40516f;
-    --accent: #70a2ff;
-    --accent-strong: #a7c4ff;
-    --accent-soft: rgba(112, 162, 255, 0.14);
-    --mint: #4fd5c4;
-    --mint-soft: rgba(79, 213, 196, 0.14);
-    --danger: #f08f84;
-    --danger-soft: rgba(240, 143, 132, 0.12);
-    --warning: #f5bd5f;
-    --shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.22);
+    color: #f1f5f9;
+    background: #0f1117;
+    --bg: #0f1117;
+    --panel: #1a1f2e;
+    --panel-solid: #1a1f2e;
+    --panel-soft: #222840;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --subtle: #64748b;
+    --border: #2d3555;
+    --strong-border: #3d4a6e;
+    --accent: #6b8cff;
+    --accent-strong: #93aaff;
+    --accent-soft: rgba(107, 140, 255, 0.15);
+    --mint: #2dd4bf;
+    --mint-soft: rgba(45, 212, 191, 0.15);
+    --danger: #f87171;
+    --danger-soft: rgba(248, 113, 113, 0.12);
+    --warning: #fbbf24;
+    --shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.28);
   }
 
   body { background: var(--bg); }
@@ -827,29 +827,29 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
 
   .input-zone textarea,
   .hash-value,
-  .number-field input { background: var(--bg); color: #eff4ff; }
+  .number-field input { background: var(--bg); color: var(--text); }
 
-  .case-toggle { background: #1b2639; }
-  .segmented { background: #1b2639; }
-  .segmented__option:hover:not(.is-selected) { background: #243248; }
-  .segmented__option.is-selected { color: #0b1220; }
+  .case-toggle { background: var(--panel-soft); }
+  .segmented { background: var(--panel-soft); }
+  .segmented__option:hover:not(.is-selected) { background: var(--panel); }
+  .segmented__option.is-selected { color: #0f1117; }
 
   .input-zone textarea:focus,
-  .number-field input:focus { border-color: #50678b; background: #141d2d; }
+  .number-field input:focus { border-color: var(--accent); background: var(--panel); }
 
   .hash-value.is-interactive:hover { background: var(--accent-soft); }
 
-  .progress-track { background: #26344c; }
+  .progress-track { background: var(--panel-soft); }
 
-  .batch-bar__track { background: #202b40; }
-  .batch-bar__fill { background: linear-gradient(90deg, #6e94df, #58b9ad); }
+  .batch-bar__track { background: var(--panel-soft); }
+  .batch-bar__fill { background: linear-gradient(90deg, var(--accent), var(--mint)); }
 
   .task-card.is-error { background: var(--danger-soft); }
 
-  .drop-overlay { background: rgba(112, 162, 255, 0.12); }
+  .drop-overlay { background: rgba(107, 140, 255, 0.1); }
   .drop-overlay__panel { background: var(--panel-solid); }
 
-  .primary-button { color: #0b1220; }
+  .primary-button { color: #0f1117; }
 
   .settings-drawer { background: var(--panel-solid); border-left-color: var(--border); }
   .drawer-header { background: var(--panel-solid); }
