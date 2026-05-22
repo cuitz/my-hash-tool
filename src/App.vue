@@ -677,8 +677,8 @@ onUnmounted(() => {
             <div class="progress-meta__right">
               <!-- 全部小写/大写：移到卡片内，仅完成时显示 -->
               <template v-if="task.status === 'done'">
-                <button class="text-button text-button--xs" type="button" title="将此项结果统一为小写" @click="() => { for (const a of task.algorithms) task.displayCases[a] = 'lowercase' }">全部小写</button>
-                <button class="text-button text-button--xs" type="button" title="将此项结果统一为大写" @click="() => { for (const a of task.algorithms) task.displayCases[a] = 'uppercase' }">全部大写</button>
+                <button class="text-button text-button--case" type="button" title="将此项结果统一为小写" @click="() => { for (const a of task.algorithms) task.displayCases[a] = 'lowercase' }">全部小写</button>
+                <button class="text-button text-button--case" type="button" title="将此项结果统一为大写" @click="() => { for (const a of task.algorithms) task.displayCases[a] = 'uppercase' }">全部大写</button>
               </template>
               <span>{{ task.progress }}%</span>
             </div>

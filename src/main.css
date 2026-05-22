@@ -129,6 +129,22 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
   padding: 0 6px;
 }
 
+/* 卡片内大小写批量切换按钮：有边框，更易发现 */
+.text-button--case {
+  min-height: 24px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 8px;
+  border-color: var(--border);
+  background: var(--panel-soft);
+  color: var(--muted);
+}
+.text-button--case:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
 .primary-button {
   border-color: var(--accent);
   background: var(--accent);
@@ -276,7 +292,16 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
   flex-shrink: 0;
   min-height: 24px;
   font-size: 12px;
-  padding: 0 8px;
+  font-weight: 600;
+  padding: 0 10px;
+  border-color: var(--border);
+  background: var(--panel-soft);
+  color: var(--text);
+}
+.batch-bar__cancel:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .batch-bar__track {
@@ -671,7 +696,7 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(320px, 90vw);
+  width: min(380px, 90vw);
   background: var(--panel-solid);
   border-left: 1px solid var(--border);
   box-shadow: -8px 0 32px rgba(15, 23, 42, 0.12);
