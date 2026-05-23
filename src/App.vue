@@ -368,13 +368,6 @@ function toggleRowCase(task: HashTask, algorithm: HashAlgorithm) {
   task.displayCases[algorithm] = getRowCase(task, algorithm) === 'uppercase' ? 'lowercase' : 'uppercase'
 }
 
-function applyAllCase(target: HashCase) {
-  for (const task of tasks.value) {
-    if (task.status !== 'done') continue
-    for (const a of task.algorithms) task.displayCases[a] = target
-  }
-}
-
 async function copyHash(task: HashTask, algorithm: HashAlgorithm) {
   if (!task.hashes) return
   const value = getDisplayedHash(task, algorithm)
